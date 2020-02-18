@@ -1,0 +1,109 @@
+version: '3.7'
+services:
+  db:
+    container_name: ${PROJECT_NAME}-db
+    image: postgres:12
+    restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+
+  queue:
+    container_name: ${PROJECT_NAME}-queue
+    image: rabbitmq:3
+    ports:
+    - 5672:5672
+    labels:
+      - "traefik.http.routers.app.rule=Host(`$DOMAIN`)"
+      - "traefik.http.services.app.loadbalancer.server.port=5672"
+
+#  redis:
+#    container_name: ${PROJECT_NAME}-redis
+#    image: redis:5
+#    ports:
+#    - 6379:6379
+
+  pgadmin:
+    container_name: ${PROJECT_NAME}-pgadmin
+    image: dpage/pgadmin4
+    depends_on:
+      - db
+    ports:
+      - '5050:5050'
+    env_file:
+      - .env
+
+  flower:
+    container_name: ${PROJECT_NAME}-flower
+    image: totem/celery-flower-docker
+    ports:
+      - '5555:5555'
+    env_file:
+      - .env
+    depends_on:
+      - queue
+
+
+  app:
+    container_name: ${PROJECT_NAME}-app
+    build:
+      context: .
+      dockerfile: app.dockerfile
+    command: ['./app-start.sh']
+    volumes:
+      - ./:/backend
+    environment:
+      - SERVER_NAME=${DOMAIN}
+      - SERVER_HOST=http://${DOMAIN}
+    env_file:
+      - .env
+    labels:
+      - "traefik.http.routers.app.rule=Host(`$DOMAIN`) && PathPrefix(`/api`)"
+      - "traefik.http.services.app.loadbalancer.server.port=8000"
+    depends_on:
+      - db
+    networks:
+      default:
+        aliases:
+          - ${DOMAIN}
+
+  worker:
+    container_name: ${PROJECT_NAME}-worker
+    build:
+      context: .
+      dockerfile: worker.dockerfile
+    volumes:
+      - ./:/backend
+    environment:
+      - SERVER_HOST=http://${DOMAIN}
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - queue
+
+  adminer:
+    image: adminer
+    container_name: ${PROJECT_NAME}-adminer
+    restart: always
+    ports:
+      - 8010:8080
+
+  reverse-proxy:
+    container_name: ${PROJECT_NAME}-reverse-proxy
+    image: traefik:v2.1
+    command:
+#      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - '80:80'
+      - '8080:8080'
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    env_file:
+      - .env
