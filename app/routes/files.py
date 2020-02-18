@@ -1,7 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks
 from app.core.celery_app import celery_app
-from app.worker import download_files
-
+from app.worker import download_files, identify_files
 
 router = APIRouter()
 
@@ -51,5 +50,11 @@ def test_celery():
 
 @router.get('/download')
 def download():
-    x = download_files.delay()
-    return {'msg': 'dl start', 'task_id': x.task_id}
+    result = download_files.delay()
+    return {'msg': 'dl start', 'task_id': result.task_id}
+
+
+@router.get('/identify')
+def identify():
+    result = identify_files.delay()
+    return {'msg': 'dl start', 'task_id': result.task_id}
