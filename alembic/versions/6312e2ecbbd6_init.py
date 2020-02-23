@@ -73,6 +73,9 @@ def upgrade():
     )
 
 
-
 def downgrade():
-    pass
+    op.drop_table('period')
+    op.drop_table('group')
+    op.drop_table('room')
+    op.drop_table('teacher')
+    op.drop_table('schedule_file')
