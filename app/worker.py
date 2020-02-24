@@ -57,30 +57,37 @@ def download_files(self):
     return 'finished'
 
 
+def search_words(text, word_dict):
+    for k, v in word_dict.items():
+        for word in v:
+            if re.search(rf'\w*{word}\w*', text, re.IGNORECASE):
+                return k
+
+    return 0
+
+
 def parse_title(ws):
-    course = 0
-    grade = 'u'
-    category = institute = 'unknown'
+    course = category = grade = institute = 0
     for row in ws.iter_rows(min_row=1, max_row=2, min_col=1, max_col=4):
         for cols in row:
             value = str(cols.value)
-            if re.match(r"\bр\s*а\s*с\s*п\s*и\s*с\s*а\s*н\s*и\s*е\b", value, re.IGNORECASE):
+            if re.match(r"р\s*а\s*с\s*п\s*и\s*с\s*а\s*н\s*и\s*е\b", value, re.IGNORECASE):
                 match1 = re.search(r'\w*\d\w*', value)
                 if match1:
                     course = match1[0]
-                match2 = re.search(r'\w*занятий\w*', value)
-                if match2:
-                    category = "class"
-                match2 = re.search(r'\w*зачетной\w*', value) or re.search(r'\w*зачетов\w*', value)
-                if match2:
-                    category = "test"
-                match2 = re.search(r'\w*экзаменационной\w*', value)
-                if match2:
-                    category = "exam"
+
+                category_dict = {
+                    'class': ['занятий'],
+                    'test': ['зачетной', 'зачётной', 'зачетов', 'зачётов'],
+                    'exam': ['экзаменационной']
+                }
+                category = search_words(value, category_dict)
+
                 match3 = re.search(r'\w*ИНТЕГУ\w*', value)
                 if match3:
                     institute = "ИНТЕГУ"
-                match3 = re.search(r'\w*КБиСП\w*', value) or re.search(r'\w*КБСП\w*', value)
+                match3 = re.search(r'\w*КБиСП\w*', value, re.IGNORECASE) or re.search(r'\w*КБСП\w*', value,
+                                                                                      re.IGNORECASE)
                 if match3:
                     institute = "КБиСП"
                 match3 = re.search(r'\w*кибернетики\w*', value)
@@ -113,17 +120,22 @@ def parse_title(ws):
                                                                      value)
                 if match3:
                     institute = "ТХТ"
-
+                grade = 'b'
                 match4 = re.search(r'\w*магистратуры\w*', value)
                 if match4:
                     grade = "m"
 
-    return {
-        'course': course,
-        'institute': institute,
-        'grade': grade,
-        'category': category
-    }
+                result = {
+                    'course': course,
+                    'institute': institute,
+                    'grade': grade,
+                    'category': category
+                }
+                if 0 in result.values():
+                    return 0
+                else:
+                    return result
+    return 0
 
 
 @celery_app.task(bind=True, track_started=True)
@@ -131,12 +143,20 @@ def identify_files(self):
     folder = Path('schedule_files')
     path, dirs, files = next(os.walk(folder))
     file_count = len(files)
-    for i, file_name in enumerate(os.listdir(folder)):
+    sorted_files = sorted(os.listdir(folder))
+    for i, file_name in enumerate(sorted_files):
         file_path = Path(folder / file_name)
         wb = load_workbook(file_path, read_only=True, data_only=True)
         for sheet in wb.sheetnames:
             ws = wb[sheet]
-            print(file_name)
-            print(parse_title(ws))
+
+            result = parse_title(ws)
+
+            if not result:
+                logger.error(file_name)
+            else:
+                logger.info(file_name)
+                logger.info(result)
+                break
 
     return 'finished'
