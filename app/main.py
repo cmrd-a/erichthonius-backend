@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.routes.api import router
+from app.db.config import database
 
 
 def get_application() -> FastAPI:
@@ -22,6 +23,16 @@ def get_application() -> FastAPI:
 
 app = get_application()
 
+
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
+
 #
 # @app.middleware("http")
 # async def db_session_middleware(request: Request, call_next):
@@ -29,6 +40,3 @@ app = get_application()
 #     response = await call_next(request)
 #     request.state.db.close()
 #     return response
-
-
-

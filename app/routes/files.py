@@ -1,6 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks
 from app.core.celery_app import celery_app
 from app.worker import download_files, identify_files
+from app.db.models import Group
 
 router = APIRouter()
 
@@ -58,3 +59,13 @@ def download():
 def identify():
     result = identify_files.delay()
     return {'msg': 'dl start', 'task_id': result.task_id}
+
+
+@router.get('/insert/{value}')
+async def download(value: str):
+
+    await Group.objects.create(name=value)
+
+    notes = await Group.objects.all()
+
+    return notes
