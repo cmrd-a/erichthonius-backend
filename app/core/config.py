@@ -1,5 +1,11 @@
 import os
 from starlette.config import Config
+import sqlalchemy
+import databases
+
+database = databases.Database("postgresql://postgres:postgres@localhost:5432/mydb")
+metadata = sqlalchemy.MetaData()
+
 
 config = Config(".env")
 

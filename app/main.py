@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.routes.api import router
-from app.db.config import database
+from app.core.config import database
 
 
 def get_application() -> FastAPI:
