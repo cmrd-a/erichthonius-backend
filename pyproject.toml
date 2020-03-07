@@ -24,7 +24,6 @@ loguru = "^0.4.1"
 requests = "^2.22.0"
 pydantic = "^1.4"
 openpyxl = "^3.0.3"
-orm = "^0.1.5"
 asyncpg = "^0.20.1"
 databases = {extras = ["postgresql"], version = "^0.2.6"}
 

@@ -1,66 +1,63 @@
-from app.core.config import database, metadata
-import orm
+from sqlalchemy import Column, Integer, String, SmallInteger, Boolean, ForeignKey, DateTime, Time
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 
-class Group(orm.Model):
+Base = declarative_base()
+
+
+class Group(Base):
     __tablename__ = "group"
-    __database__ = database
-    __metadata__ = metadata
 
-    id = orm.Integer(primary_key=True)
-    name = orm.String(max_length=256, unique=True)
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+
+    periods = relationship("Period", back_populates="group")
 
 
-class Teacher(orm.Model):
+class Teacher(Base):
     __tablename__ = "teacher"
-    __database__ = database
-    __metadata__ = metadata
 
-    id = orm.Integer(primary_key=True)
-    name = orm.String(max_length=256, unique=True)
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
 
 
-class Room(orm.Model):
+class Room(Base):
     __tablename__ = "room"
-    __database__ = database
-    __metadata__ = metadata
 
-    id = orm.Integer(primary_key=True)
-    name = orm.String(max_length=256, unique=True)
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
 
 
-class ScheduleFile(orm.Model):
+class ScheduleFile(Base):
     __tablename__ = "schedule_file"
-    __database__ = database
-    __metadata__ = metadata
 
-    id = orm.Integer(primary_key=True)
-    semester = orm.Boolean()
-    grade = orm.String(max_length=256)
-    year = orm.String(max_length=256)
-    category = orm.String(max_length=256)
-    institute = orm.String(max_length=256)
-    course = orm.String(max_length=256)
-    file_name = orm.String(max_length=256)
-    updated = orm.DateTime()
+    id = Column(Integer, primary_key=True)
+    year = Column(SmallInteger)
+    semester = Column(Boolean)
+    institute = Column(String)
+    grade = Column(String)
+    course = Column(SmallInteger)
+    category = Column(String)
+    file_name = Column(String)
+    updated = Column(DateTime)
 
 
-class Period(orm.Model):
+class Period(Base):
     __tablename__ = "period"
-    __database__ = database
-    __metadata__ = metadata
 
-    id = orm.Integer(primary_key=True)
-    group = orm.ForeignKey(Group)
-    weekday = orm.String(max_length=256)
-    number = orm.String(max_length=256)
-    even = orm.Boolean()
-    names = orm.String(max_length=256)
-    catgeory = orm.String(max_length=256)
-    teacher = orm.ForeignKey(Teacher)
-    room = orm.ForeignKey(Room)
-    file = orm.ForeignKey(ScheduleFile)
+    id = Column(Integer, primary_key=True)
+    group_id = Column(Integer, ForeignKey("group.id"))
+    group = relationship("Group", back_populates="periods")
+    weekday = Column(SmallInteger)
+    number = Column(SmallInteger)
+    even = Column(Boolean)
+    name = Column(String)
+    catgeory = Column(String)
+    teacher = Column(Integer, ForeignKey('teacher.id'))
+    room = Column(Integer, ForeignKey('room.id'))
+    file = Column(Integer, ForeignKey('schedule_file.id'))
 
-    month = orm.String(max_length=256)
-    time = orm.Time()
-    day = orm.Integer()
+    month = Column(String)
+    time = Column(Time)
+    day = Column(SmallInteger)

@@ -1,9 +1,12 @@
 from fastapi import APIRouter
 from app.core.celery_app import celery_app
-from app.core.config import database, metadata
-import sqlalchemy
 
-from app.db.models import Group, Period
+import sqlalchemy
+from pathlib import Path
+from openpyxl import load_workbook
+
+
+from app.db.models import Base, Group, Period, ScheduleFile
 
 router = APIRouter()
 
@@ -14,17 +17,10 @@ def task_status(task_id):
     return {'state': res.state, 'info': res.info}
 
 
-@router.get('/initdb')
-async def initdb():
-    engine = sqlalchemy.create_engine(str(database.url))
-    metadata.create_all(engine)
-    return "okk"
 
-
-@router.get('/creategroup')
+@router.get('/sometest')
 async def creategroup():
-    gr = await Group.objects.create(name="hikka12")
-    await ScheduleFile.objects.create(groupe=gr)
+
 
 
     return "okk"

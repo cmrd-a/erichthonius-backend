@@ -12,6 +12,9 @@ from openpyxl import load_workbook
 
 from app.core.celery_app import celery_app
 from app.core.config import MIREA_SCHEDULE_URL
+from app.db.models import Group, Period, ScheduleFile
+from datetime import datetime
+
 
 redis_client = redis.Redis(host='localhost', port=6379)
 
@@ -126,7 +129,7 @@ def parse_title(ws):
                     grade = "m"
 
                 result = {
-                    'course': course,
+                    'course': int(course),
                     'institute': institute,
                     'grade': grade,
                     'category': category
@@ -136,6 +139,19 @@ def parse_title(ws):
                 else:
                     return result
     return 0
+
+
+# async def insert_schedule_file(values):
+#     return await ScheduleFile.objects.create(
+#         year=2020,
+#         semester=True,
+#         institute=values.get("institute"),
+#         course=values.get("course"),
+#         grade=values.get("grade"),
+#         category=values.get("category"),
+#         file_name="54yyh",
+#         updated=datetime.now()
+#     )
 
 
 @celery_app.task(bind=True, track_started=True)
@@ -155,8 +171,10 @@ def identify_files(self):
             if not result:
                 logger.error(file_name)
             else:
-                logger.info(file_name)
+                # logger.info(file_name)
                 logger.info(result)
+                # insert_schedule_file(result)
+
                 break
 
     return 'finished'
